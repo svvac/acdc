@@ -14,13 +14,29 @@ class Engine {
         this.subjects = {};
         this.actions = {};
 
-        this.rootPolicy = new Policy({});
-
+        // Once upon a time there was a wild land
+        this.rootPolicy = new Policy({ id: 'root' });
         this.rootPolicy.combine('firstMatch');
+
+        // And there came a race of giants led by their king, Zero
+        let Root = this.register('root', new Subject({ attributes: [ 'id' ]}));
+        this.root = Root.from({ id: 0 });
+
+        // And they took the ground as if it was their own and claimed:
+        // “nothing shall be denied to us”
+        this.rule({
+            target: { subject: Root },
+            method: 'allow',
+            condition: true,
+        });
     }
 
-    policy (config) {
-        return this.rootPolicy.policy(config);
+    policy (pol) {
+        return this.rootPolicy.policy(pol);
+    }
+
+    rule (rul) {
+        return this.rootPolicy.rule(rul);
     }
 
     can (subject, action, ressource, context) {

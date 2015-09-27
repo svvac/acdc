@@ -10,7 +10,7 @@ class Target {
     }
 
     isTargeted (request) {
-        return logic.evaluate('$', this.target, request);
+        return logic.evaluate('$and', this.target, request);
     }
 
     resolve (request) {

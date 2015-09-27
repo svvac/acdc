@@ -19,7 +19,6 @@ class Policy extends Target {
         this.deny = this.method === 'deny';
         this.allow = this.method === 'allow';
 
-        this.config.combinators
         this.combine('combinator' in this.config
             ? this.config.combinator
             : 'firstMatch');
@@ -39,20 +38,24 @@ class Policy extends Target {
         return this;
     }
 
-    rule (config) {
-        var r = new Rule(config);
+    rule (rul) {
+        if (!rul instanceof Rule) {
+            rul = new Rule(rule);
+        }
 
-        this.targets.push(r);
+        this.targets.push(rul);
 
         return this;
     }
 
-    policy (config) {
-        var p = new Policy(config);
+    policy (pol) {
+        if (!(pol instanceof Policy)) {
+            pol = new Policy(pol);
+        }
 
-        this.targets.push(p);
+        this.targets.push(pol);
 
-        return p;
+        return pol;
     }
 
     resolve (request) {
@@ -62,6 +65,8 @@ class Policy extends Target {
 
 Policy.Combinators = {
     firstMatch: function (targets, request, fallback) {
+        console.log('FIRSTMATCH');
+        console.dir(targets);
         let result = targets.reduce(function (prev, target) {
             return prev === null && target.isTargeted(request)
                    ? target.resolve(request)

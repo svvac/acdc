@@ -5,6 +5,8 @@ const logic = require('../src/logic'),
       Entity = require('../src/entity');
 
 describe('logic', function () {
+    // We use the easy { $ } i.e. { '$': $ } to easily create new non-empty objects
+    let $ = true;
 
     describe('filters', function () {
         let filters = logic.filters;
@@ -14,96 +16,87 @@ describe('logic', function () {
         });
 
         describe('$and()', function () {
-            it('should accept an array param and return true if all values evaluate as truthy', function () {
+            it('should accept an array param and return true if at least one value evaluate as truthy', function () {
                 let context = {},
-                    value = {};
+                    value = { };
 
                 expect(filters.$and([ true, true, true ], context, value)).to.be.true;
-                expect(filters.$and([ ], context, value)).to.be.true;
                 expect(filters.$and([ true, false, true ], context, value)).to.be.false;
                 expect(filters.$and([ false ], context, value)).to.be.false;
+                expect(filters.$and([ true ], context, value)).to.be.true;
+                expect(filters.$and([ ], context, value)).to.be.false;
             });
 
             it('should accept boolean params and return their value', function () {
                 let context = {},
-                    value = {};
+                    value = { };
 
                 expect(filters.$and(true, context, value)).to.be.true;
                 expect(filters.$and(false, context, value)).to.be.false;
             });
 
             // Untested: object case
+            it('should return false on empty objects', function () {
+                expect(filters.$and({}, context, {})).to.be.false;
+            });
 
-            it('should choke on unsupported param types', function () {
-                let context = {}, value = {};
+            it('should return boolean evaluation of other types', function () {
+                let context = {}, value = { };
 
-                expect(function () {
-                    filters.$and(undefined, context, value);
-                }, 'undefined param').to.throw();
-
-                expect(function () {
-                    filters.$and(null, context, value);
-                }, 'null param').to.throw();
-
-                expect(function () {
-                    filters.$and(21, context, value);
-                }, 'number param').to.throw();
-
-                expect(function () {
-                    filters.$and('hello', context, value);
-                }, 'string param').to.throw();
-
-                expect(function () {
-                    filters.$and(function () {}, context, value);
-                }, 'function param').to.throw();
-            })
+                expect(filters.$and(undefined, context, value)).to.be.false;
+                expect(filters.$and(null, context, value)).to.be.false;
+                expect(filters.$and(0, context, value)).to.be.false;
+                expect(filters.$and(21, context, value)).to.be.true;
+                expect(filters.$and('hello', context, value)).to.be.true;
+                expect(filters.$and(function () {}, context, value)).to.be.true;
+            });
         });
 
         describe('$or()', function () {
             it('should accept an array and return true if any of its conditions is truthy', function () {
-                expect(filters.$or([ false, true, false ], {}, {})).to.be.true;
-                expect(filters.$or([ true, true, true ], {}, {})).to.be.true;
-                expect(filters.$or([ false, false, false ], {}, {})).to.be.false;
-                expect(filters.$or([ ], {}, {})).to.be.false;
+                expect(filters.$or([ false, true, false ], {}, { $ })).to.be.true;
+                expect(filters.$or([ true, true, true ], {}, { $ })).to.be.true;
+                expect(filters.$or([ false, false, false ], {}, { $ })).to.be.false;
+                expect(filters.$or([ ], {}, { })).to.be.false;
             });
 
             it('should choke on non-array params', function () {
                 expect(function () {
-                    filters.$or(undefined, {}, {});
+                    filters.$or(undefined, {}, { });
                 }, 'undefined param').to.throw();
 
                 expect(function () {
-                    filters.$or(null, {}, {});
+                    filters.$or(null, {}, { });
                 }, 'null param').to.throw();
 
                 expect(function () {
-                    filters.$or(21, {}, {});
+                    filters.$or(21, {}, { });
                 }, 'number param').to.throw();
 
                 expect(function () {
-                    filters.$or('hello', {}, {});
+                    filters.$or('hello', {}, { });
                 }, 'string param').to.throw();
 
                 expect(function () {
-                    filters.$or({}, {}, {});
+                    filters.$or({ $ }, {}, { });
                 }, 'object param').to.throw();
 
                 expect(function () {
-                    filters.$or(function () {}, {}, {});
+                    filters.$or(function () {}, {}, { });
                 }, 'function param').to.throw();
             });
         });
 
         describe('$is()', function () {
-            it('should return false if param or value is undefined', function () {
-                expect(filters.$is(undefined, {}, {})).to.be.false;
-                expect(filters.$is({}, {}, undefined)).to.be.false;
-                expect(filters.$is(undefined, {}, undefined)).to.be.false;
+            it('should return false if param or value is undefined, but not both', function () {
+                expect(filters.$is(undefined, {}, { $ })).to.be.false;
+                expect(filters.$is({ $ }, {}, undefined)).to.be.false;
+                expect(filters.$is(undefined, {}, undefined)).to.be.true;
             });
 
             it('should use Entity.Instance#$equals() when either param or value is an Entity.Instance', function () {
-                let e1 = new Entity({ attributes: [ 'id' ], id: 'e1' }),
-                    e2 = new Entity({ attributes: [ 'id' ], id: 'e2' });
+                let e1 = new Entity({ attributes: [ 'id' ] }),
+                    e2 = new Entity({ attributes: [ 'id' ] });
 
                 let i11 = e1.from({ id: 1 }),
                     i12 = e1.from({ id: 2 }),
@@ -120,7 +113,7 @@ describe('logic', function () {
             })
 
             it('should return true if param === value', function () {
-                let guard = {};
+                let guard = { $ };
                 expect(filters.$is(guard, {}, guard)).to.be.true;
                 expect(filters.$is('hello', {}, 'hello')).to.be.true;
                 expect(filters.$is(42, {}, 42)).to.be.true;
@@ -130,8 +123,7 @@ describe('logic', function () {
             });
 
             it('should return false if param !== value', function () {
-                let guard = {};
-                expect(filters.$is({}, {}, {})).to.be.false;
+                expect(filters.$is({ }, {}, { })).to.be.false;
                 expect(filters.$is('hello', {}, 'hello2')).to.be.false;
                 expect(filters.$is(42, {}, 41)).to.be.false;
                 expect(filters.$is(false, {}, true)).to.be.false;
@@ -141,7 +133,7 @@ describe('logic', function () {
         describe('$fn()', function () {
             it('should accept a function param and use its return value', function () {
                 let context = {},
-                    value = {};
+                    value = { };
                 let fn1 = function () {
                     return true;
                 };
@@ -159,7 +151,7 @@ describe('logic', function () {
 
             it('should pass value and context to the function', function () {
                 let context = {},
-                    value = {};
+                    value = { };
                 let fn = function (val, ctx) {
                     expect(val).to.equal(value);
                     expect(ctx).to.equal(context);

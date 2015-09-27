@@ -1,8 +1,14 @@
 'use strict';
 
+let _entityCount = 0;
+
 class Entity {
     constructor (config) {
-        this.config = config;
+        this.config = config || {};
+
+        this.config.id = this.config.id || 'entity' + (++_entityCount);
+
+        this.instances = {};
 
         var self = this;
 
@@ -21,10 +27,17 @@ class Entity {
         this.Instance.prototype = Object.create(Instance.prototype);
     }
 
-    from (source, engine) {
-        return new this.Instance(this.config.id + ':' + source.id,
-                                 source);
-        
+    from (source, save) {
+        save = save === undefined ? true : !!save;
+
+        let id = this.config.id + ':' + source.id;
+        let instance = new this.Instance(id, source);
+
+        if (save) {
+            this.instances[id] = instance;
+        }
+
+        return instance;
     }
 }
 
@@ -62,4 +75,4 @@ Entity.DEFAULT_CONFIG = {
 }
 
 
-module.exports = Entity
+module.exports = Entity;
