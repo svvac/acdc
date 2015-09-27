@@ -4,8 +4,14 @@ const Target = require('./target'),
       utils  = require('./utils'),
       logic  = require('./logic');
 
+let _ruleCount = 0;
+
 class Rule extends Target {
     constructor (config) {
+        config = config || {};
+
+        config.id = config.id || 'rule' + (++_ruleCount);
+
         super(config.target);
 
         this.config = config;
@@ -42,6 +48,10 @@ class Rule extends Target {
 
             return false;
         }
+    }
+
+    toString () {
+        return '[Rule:' + this.config.id + ']';
     }
 }
 

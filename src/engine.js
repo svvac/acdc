@@ -1,10 +1,9 @@
 'use strict';
-
-var Ressource = require('./ressource'),
-    Action = require('./action'),
-    Subject = require('./subject'),
-    Policy = require('./policy')
-;
+const colors = require('colors');
+const Ressource = require('./ressource'),
+      Action = require('./action'),
+      Subject = require('./subject'),
+      Policy = require('./policy');
 
 class Engine {
     constructor (config) {
@@ -39,22 +38,107 @@ class Engine {
         return this.rootPolicy.rule(rul);
     }
 
-    can (subject, action, ressource, context) {
-        if (typeof action === 'object' && !(action instanceof Action)) {
-            let obj = {};
-            Object.keys(action).forEach(function (act) {
-                obj[act] = this.can(subject, action[act], ressource, context);
-            }, this);
-
-            return obj;
+    can (subject, action, ressource, context, debug) {
+        if (debug) {
+            console.log(
+                'CAN'.magenta,
+                subject.toString().bold,
+                action.toString().yellow,
+                ressource.toString().bold,
+                'in',
+                JSON.stringify(context),
+                '?');
         }
 
-        return this.rootPolicy.resolve({
+        let ret = this.rootPolicy.resolve({
             subject,
             action,
             ressource,
             context,
-        });
+        }, debug === true ? ' ' : false);
+
+        if (debug) {
+            console.log('=>', ret ? 'allowed'.green : 'denied'.red);
+        }
+
+        return ret;
+    }
+
+    cans (subjects, actions, ressources, contexts) {
+        if (!Array.isArray(subjects)) subjects = [ subjects ];
+        if (!Array.isArray(actions)) actions = [ actions ];
+        if (!Array.isArray(ressources)) ressources = [ ressources ];
+        if (!Array.isArray(contexts)) contexts = [ contexts ];
+
+        let results = [];
+
+        for (let a = 0; a < actions   .length; a++) {
+        for (let r = 0; r < ressources.length; r++) {
+        for (let s = 0; s < subjects  .length; s++) {
+        for (let c = 0; c < contexts  .length; c++) {
+            results.push({
+                case: {
+                    subject:    subjects[s],
+                    ressource:  ressources[r],
+                    action:     actions[a],
+                    context:    contexts[c],
+                },
+                result: this.can(subjects[s], actions[a], ressources[r], contexts[c], true),
+            });
+        }}}}
+
+        return results;
+    }
+
+    table(subjects, actions, ressources, contexts) {
+        if (!Array.isArray(subjects)) subjects = [ subjects ];
+        if (!Array.isArray(actions)) actions = [ actions ];
+        if (!Array.isArray(ressources)) ressources = [ ressources ];
+        if (!Array.isArray(contexts)) contexts = [ contexts ];
+
+        let lens = {
+            subject: subjects.reduce(function (len, o) {
+                return Math.max(len, o.toString().length); }, 7),
+            action: actions.reduce(function (len, o) {
+                return Math.max(len, o.toString().length); }, 6),
+            ressource: ressources.reduce(function (len, o) {
+                return Math.max(len, o.toString().length); }, 9),
+            context: contexts.reduce(function (len, o) {
+                return Math.max(len, JSON.stringify(o).length); }, 7),
+        };
+
+        function pad (len, str) {
+            if (str.length >= len) return str;
+            else return str + ' '.repeat(len - str.length);
+        }
+
+        let lines = this.cans(subjects, actions, ressources, contexts);
+
+        console.log(
+            pad(lens.subject, 'SUBJECT').bold,
+            '  ',
+            pad(7, 'VERDICT').bold,
+            '  ',
+            pad(lens.action, 'ACTION').bold,
+            ' ',
+            pad(lens.ressource, 'RESSOURCE').bold,
+            '    ',
+            pad(lens.context, 'CONTEXT').bold
+        );
+
+        for (let i = 0; i < lines.length; i++) {
+            console.log(
+                pad(lens.subject,   lines[i].case.subject  .toString()).bold,
+                'is',
+                pad(7,              lines[i].result ? 'allowed' : 'denied')[lines[i].result ? 'green' : 'red'],
+                'to',
+                pad(lens.action,    lines[i].case.action   .toString()).yellow,
+                ' ',
+                pad(lens.ressource, lines[i].case.ressource.toString()).bold,
+                'when',
+                pad(lens.context,   JSON.stringify(lines[i].case.context))
+            );
+        }
     }
 
     addRessource (id, ressource) {

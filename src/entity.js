@@ -39,6 +39,10 @@ class Entity {
 
         return instance;
     }
+
+    toString () {
+        return '[Entity:' + this.config.id + ']';
+    }
 }
 
 function Instance () {
@@ -61,11 +65,20 @@ Instance.prototype.$equals = function (other) {
 };
 
 Instance.prototype.toString = function () {
-    return this.$entity.config.id + 'EntityInstance: ' + this.$id;
-};
+    let id = this.$id;
 
-Instance.prototype.toSource = function () {
-    return '<' + this.toString() + '>';
+    let s = new String('<' + this.$id + '>');
+
+    Object.defineProperty(s, 'bold', {
+        get: function () {
+            let idx = id.indexOf(':') + 1,
+                t = id.substr(0, idx),
+                i = id.substring(idx);
+            return '<' + t + i.cyan + '>';
+        }
+    });
+
+    return s;
 };
 
 Entity.Instance = Instance;
