@@ -1,0 +1,19 @@
+{
+  "name": "acdc",
+  "version": "0.0.1",
+  "description": "Access Control Decision Coordinator: Unopinionated attribute-based authorization engine",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "authorization",
+    "acl"
+  ],
+  "author": "Simon Wachter",
+  "license": "MIT",
+  "devDependencies": {
+    "chai": "^3.3.0",
+    "mocha": "^2.3.3"
+  }
+}
