@@ -14,7 +14,7 @@ class Subject extends Entity {
     }
 
     toString () {
-        let s = '[Subject:' + this.config.id + ']';
+        return '[Subject:' + this.config.id + ']';
     }
 }
 

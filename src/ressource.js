@@ -5,13 +5,13 @@ const Entity = require('./entity');
 let _ressourceCount = 0;
 
 class Ressource extends Entity {
-	constructor (config) {
-		config = config || {};
+    constructor (config) {
+        config = config || {};
 
         config.id = config.id || 'ressource' + (++_ressourceCount);
 
         super(config);
-	}
+    }
 
     toString () {
         return '[Ressource:' + this.config.id + ']';

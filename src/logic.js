@@ -60,11 +60,17 @@ filters.$in.resolveInContext = true;
  * @param  {*}      [value]   The value to be matched against (if any)
  * @return {boolean} Whether the condition evaluated to true          
  */
-function evaluate(predicate, param, context, value) {
+function evaluate(predicate, param, context, value, debug) {
     if (!(predicate in filters)) {
-        value = utils.resolveProp(context, predicate);
+        let res = utils.resolveProp(context, predicate);
+        if (debug) console.log(debug, predicate, ('(' + (res ? res.toString() : res) + ')').grey, 'is'.cyan, param.toString());
+
+        value = res;
         predicate = '$is';
+    } else {
+        if (debug) console.log(debug, predicate.cyan, param.toString(), value ? value.toString() : '-'.grey);
     }
+
 
     let filter = filters[predicate];
 
@@ -74,30 +80,38 @@ function evaluate(predicate, param, context, value) {
               : utils.resolveProp(context, param);
     }
 
-    return filter(param, context, value);
+    let ret = filter(param, context, value, debug);
+
+    if (debug) console.log(debug, '=>', ret ? 'true'.green : 'false'.red);
+
+    return ret;
 }
 
-function and_filter (param, context, value) {
+function and_filter (param, context, value, debug) {
     if (!param) {
         return false;
     } if (Array.isArray(param)) {
         return true === param.reduce(function (truthy, cond) {
-            return truthy || truthy === null
-                ? and_filter(cond, context, value)
-                : false;
+            if (truthy === true || truthy === null) {
+                return and_filter(cond, context, value, debug ? debug + ' | '.black : false);
+            } else {
+                return false;
+            }
         }, null);
     } else if (typeof param === 'object') {
         return true === Object.keys(param).reduce(function (truthy, prop) {
-            return truthy || truthy === null
-                ? evaluate(prop, param[prop], context, value)
-                : false;
+            if (truthy === true || truthy === null) {
+                return evaluate(prop, param[prop], context, value, debug ? debug + ' | '.black : false);
+            } else {
+                return false;
+            }
         }, null);
     }
 
     return true;
 }
 
-function or_filter (param, context, value) {
+function or_filter (param, context, value, debug) {
     if (!Array.isArray(param)) throw 'Invalid value';
 
     return param.reduce(function (truthy, cond) {
@@ -107,7 +121,7 @@ function or_filter (param, context, value) {
 
 const PRIMITIVE_TYPES = [ 'boolean', 'number', 'undefined' ];
 
-function is_filter (param, context, value) {
+function is_filter (param, context, value, debug) {
     // If unresolved, return false unless param is undefined
     if (value === undefined || param === undefined
      || value === null      || param === null) {
@@ -146,13 +160,13 @@ function is_filter (param, context, value) {
     return param === value;
 }
 
-function fn_filter (param, context, value) {
+function fn_filter (param, context, value, debug) {
     if (typeof param !== 'function') throw 'Invalid value';
 
     return !!param(value, context);
 }
 
-function in_filter (param, context, value) {
+function in_filter (param, context, value, debug) {
     if (!Array.isArray(param)) throw 'Invalid value';
 
     let cond = param.map(function (v) { return { '$is': v } });
@@ -160,7 +174,7 @@ function in_filter (param, context, value) {
     return or_filter(cond, context, value);
 }
 
-function lte_filter (param, context, value) {
+function lte_filter (param, context, value, debug) {
     if (typeof param === 'number') {
         return param !== undefined
             && value !== undefined

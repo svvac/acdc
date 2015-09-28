@@ -68,8 +68,8 @@ class Policy extends Target {
                 'resolving'.white, this.toString(),
                 'with combinator', this.config.combinator.name.blue);
         }
-        
-        let ret = this.config.combinator(this.targets, request, this.allow, debug ? debug + '  ' : false);
+
+        let ret = this.config.combinator(this.targets, request, this.allow, debug ? debug + ' |'.black : false);
     
         if (debug) {
             console.log(debug,
@@ -89,7 +89,7 @@ Policy.Combinators = {
         let result = targets.reduce(function (prev, target, i) {
             let dbg = debug;
             if (prev !== null) {
-                if (dbg) console.log(dbg, '(' + i + ')', target.toString());
+                if (dbg) console.log(dbg, ('(' + i + ') ' + target.toString()).grey);
                 return prev;
             }
 
@@ -98,19 +98,33 @@ Policy.Combinators = {
                 dbg += '    '
             }
 
-            if (target.isTargeted(request, dbg)) {
-                if (dbg) console.log(dbg, '=>', 'targeted'.white);
-                let ret = target.resolve(request, dbg);
+            if (target.isTargeted(request, dbg ? dbg + ' |'.black : false)) {
+                if (dbg) console.log(dbg + ' |'.black, 'targeted'.white);
+                let ret = target.resolve(request, dbg ? dbg + ' |'.black : false);
                 if (dbg) console.log(dbg, '=>', ret ? 'allowed'.green : 'denied'.red);
                 return ret;
             }
 
-            if (dbg) console.log(dbg, '=>', 'not a target');
+            if (dbg) console.log(dbg + ' |'.black, 'not a target');
 
             return null;
         }, null);
 
-        return result === null ? fallback : result;
+        if (result === null) {
+            if (debug) {
+                console.log(debug, 'firstMatch', 'no match');
+                console.log(debug, '=>', fallback ? 'allowed'.green : 'denied'.red,
+                    '(fallback)');
+            }
+
+            return fallback;
+        }
+
+        if (debug) {
+            console.log(debug, '=>', result ? 'allowed'.green : 'denied'.red);
+        }
+
+        return result;
     },
     allMatch: function allMatch (targets, request, fallback, debug) {
         let result = targets.reduce(function (prev, target) {

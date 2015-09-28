@@ -11,9 +11,9 @@ class Target {
 
     isTargeted (request, debug) {
         if (debug) {
-            console.log(debug, '=> target check')
+            console.log(debug, 'target check')
         }
-        return logic.evaluate('$and', this.target, request, debug);
+        return logic.evaluate('$and', this.target, request, undefined, debug ? debug + ' | '.black : false);
     }
 
     resolve (request) {
