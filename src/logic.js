@@ -35,7 +35,10 @@ filters.$in.resolveInContext = true;
  * considered as a string literal and is passed as-is to the filter, with the
  * leading space stripped.
  *
- * context: { a: 'a value' } "a" => "a value" " a" => "a" " a" => " a"
+ *     context: { a: 'a value' }
+ *     "a" => "a value"
+ *     " a" => "a"
+ *     "  a" => " a"
  *
  * Otherwise, `evaluate` attempts to resolve the predicate as a variable name in
  * the context, before returning the following test:
@@ -63,7 +66,7 @@ filters.$in.resolveInContext = true;
 function evaluate(predicate, param, context, value, debug) {
     if (!(predicate in filters)) {
         let res = utils.resolveProp(context, predicate);
-        if (debug) console.log(debug, predicate, ('(' + (res ? res.toString() : res) + ')').grey, 'is'.cyan, param.toString());
+        if (debug) console.log(debug, predicate.white, ('(' + (res ? res.toString() : res) + ')').grey, 'is'.cyan, param.toString());
 
         value = res;
         predicate = '$is';

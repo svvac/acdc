@@ -2,7 +2,8 @@
 
 const Entity = require('./entity'),
       Action = require('./action'),
-      logic  = require('./logic');
+      logic  = require('./logic'),
+      CST = require('./constants');
 
 class Target {
     constructor (config) {
@@ -11,13 +12,15 @@ class Target {
 
     isTargeted (request, debug) {
         if (debug) {
-            console.log(debug, 'target check')
+            console.log(debug, 'target check');
+            debug += ' | '.black;
         }
-        return logic.evaluate('$and', this.target, request, undefined, debug ? debug + ' | '.black : false);
+
+        return logic.evaluate('$and', this.target, request, undefined, debug);
     }
 
-    resolve (request) {
-        throw 'Target#resolve() must be implemented by subtypes';
+    resolve (request, debug) {
+        return this.isTargeted(request, debug) ? CST.UNDETERMINED : CST.NOT_APPLICABLE;
     }
 }
 

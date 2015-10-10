@@ -2,7 +2,8 @@
 
 const Target = require('./target'),
       utils  = require('./utils'),
-      logic  = require('./logic');
+      logic  = require('./logic'),
+      CST    = require('./constants');
 
 let _ruleCount = 0;
 
@@ -28,25 +29,43 @@ class Rule extends Target {
         this.condition = this.config.condition || {};
     }
 
-    resolve (request) {
+    resolve (request, debug) {
+        if (!this.isTargeted(request, debug)) {
+            if (debug) console.log(debug, '=>', utils.logVerdict(CST.NOT_APPLICABLE));
+            return CST.NOT_APPLICABLE;
+        }
+
+        if (debug) console.log(debug, 'resolving'.white, this.toString(), 'with method',
+            (this.allow ? 'Allow' : 'Deny').blue);
+
         if ('onActivation' in this.hooks) {
             this.hooks.onActivation(request);
         }
 
-        var result = logic.evaluate('$', this.condition, request);
+        var result = logic.evaluate(
+            '$and',
+            this.condition,
+            request,
+            undefined,
+            debug ? debug + ' | '.black : false
+        );
 
         if (result && this.allow || !result && this.deny) {
+            if (debug) console.log(debug, '=>', utils.logVerdict(CST.ALLOW));
+
             if ('onApproval' in this.hooks) {
                 this.hooks.onApproval(request);
             }
 
-            return true;
+            return CST.ALLOW;
         } else {
+            if (debug) console.log(debug, '=>', utils.logVerdict(CST.DENY));
+
             if ('onDenial' in this.hooks) {
                 this.hooks.onDenial(request);
             }
 
-            return false;
+            return CST.DENY;
         }
     }
 

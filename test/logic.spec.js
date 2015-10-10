@@ -94,6 +94,29 @@ describe('logic', function () {
                 expect(filters.$is(undefined, {}, undefined)).to.be.true;
             });
 
+            it('should return false if param or value is null, but not both', function () {
+                expect(filters.$is(null, {}, { $ })).to.be.false;
+                expect(filters.$is({ $ }, {}, null)).to.be.false;
+                expect(filters.$is(null, {}, null)).to.be.true;
+            });
+
+            it('should return true if param is an entity and value one of its instances', function () {
+                let e1 = new Entity({ attributes: [ 'id' ] }),
+                    e2 = new Entity({ attributes: [ 'id' ] });
+
+                let i11 = e1.from({ id: 1 }),
+                    i12 = e1.from({ id: 2 }),
+                    i21 = e2.from({ id: 1 });
+
+                    expect(filters.$is(e1, {}, i11)).to.be.true;
+                    expect(filters.$is(e1, {}, i12)).to.be.true;
+                    expect(filters.$is(e1, {}, i21)).to.be.false;
+
+                    expect(filters.$is(e2, {}, i11)).to.be.false;
+                    expect(filters.$is(e2, {}, i12)).to.be.false;
+                    expect(filters.$is(e2, {}, i21)).to.be.true;
+            });
+
             it('should use Entity.Instance#$equals() when either param or value is an Entity.Instance', function () {
                 let e1 = new Entity({ attributes: [ 'id' ] }),
                     e2 = new Entity({ attributes: [ 'id' ] });

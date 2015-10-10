@@ -1,6 +1,9 @@
 'use strict';
 
+var CST = require('./constants');
+
 module.exports.resolveProp = resolveProp;
+module.exports.logVerdict = logVerdict;
 
 /**
  * Deep lookup a key in an object
@@ -34,4 +37,17 @@ function resolveProp (obj, key, defaultValue) {
     } else {
         return defaultValue;
     }
+}
+
+let verdicts = null;
+function logVerdict (verdict) {
+    if (!verdicts) {
+        verdicts = {};
+        verdicts[CST.ALLOW]          = 'ALLOW'.green;
+        verdicts[CST.DENY]           = 'DENY'.red;
+        verdicts[CST.NOT_APPLICABLE] = 'N/A'.grey;
+        verdicts[CST.UNDETERMINED]   = 'UNDET'.magenta;
+    }
+
+    return verdicts[verdict] || '';
 }

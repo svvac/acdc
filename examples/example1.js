@@ -57,5 +57,6 @@ engine.table(
     [ engine.root, user1, user2 ],
     [ read, update ],
     docs,
-    {}
+    {},
+    true
 );

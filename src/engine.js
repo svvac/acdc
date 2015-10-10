@@ -3,7 +3,8 @@ const colors = require('colors');
 const Ressource = require('./ressource'),
       Action = require('./action'),
       Subject = require('./subject'),
-      Policy = require('./policy');
+      Policy = require('./policy'),
+      utils = require('./utils');
 
 class Engine {
     constructor (config) {
@@ -14,8 +15,8 @@ class Engine {
         this.actions = {};
 
         // Once upon a time there was a wild land
-        this.rootPolicy = new Policy({ id: 'root' });
-        this.rootPolicy.combine('firstMatch');
+        this.rootPolicy = new Policy({ id: 'root', target: true });
+        this.rootPolicy.combine('OnlyOneMatch');
 
         // And there came a race of giants led by their king, Zero
         let Root = this.register('root', new Subject({ attributes: [ 'id' ]}));
@@ -24,6 +25,7 @@ class Engine {
         // And they took the ground as if it was their own and claimed:
         // “nothing shall be denied to us”
         this.rule({
+            id: 'builtin:root is almighty',
             target: { subject: Root },
             method: 'allow',
             condition: true,
@@ -41,11 +43,11 @@ class Engine {
     can (subject, action, ressource, context, debug) {
         if (debug) {
             console.log(
-                'CAN'.magenta,
+                'CAN'.bold,
                 subject.toString().bold,
                 action.toString().yellow,
                 ressource.toString().bold,
-                'in',
+                'when',
                 JSON.stringify(context),
                 '?');
         }
@@ -55,16 +57,16 @@ class Engine {
             action,
             ressource,
             context,
-        }, debug === true ? ' ' : false);
+        }, debug === true ? '| '.black : false);
 
         if (debug) {
-            console.log('=>', ret ? 'allowed'.green : 'denied'.red);
+            console.log('=>', utils.logVerdict(ret));
         }
 
         return ret;
     }
 
-    cans (subjects, actions, ressources, contexts) {
+    cans (subjects, actions, ressources, contexts, debug) {
         if (!Array.isArray(subjects)) subjects = [ subjects ];
         if (!Array.isArray(actions)) actions = [ actions ];
         if (!Array.isArray(ressources)) ressources = [ ressources ];
@@ -72,9 +74,9 @@ class Engine {
 
         let results = [];
 
+        for (let s = 0; s < subjects  .length; s++) {
         for (let a = 0; a < actions   .length; a++) {
         for (let r = 0; r < ressources.length; r++) {
-        for (let s = 0; s < subjects  .length; s++) {
         for (let c = 0; c < contexts  .length; c++) {
             results.push({
                 case: {
@@ -83,14 +85,14 @@ class Engine {
                     action:     actions[a],
                     context:    contexts[c],
                 },
-                result: this.can(subjects[s], actions[a], ressources[r], contexts[c], true),
+                verdict: this.can(subjects[s], actions[a], ressources[r], contexts[c], debug),
             });
         }}}}
 
         return results;
     }
 
-    table(subjects, actions, ressources, contexts) {
+    table(subjects, actions, ressources, contexts, debug) {
         if (!Array.isArray(subjects)) subjects = [ subjects ];
         if (!Array.isArray(actions)) actions = [ actions ];
         if (!Array.isArray(ressources)) ressources = [ ressources ];
@@ -107,36 +109,43 @@ class Engine {
                 return Math.max(len, JSON.stringify(o).length); }, 7),
         };
 
-        function pad (len, str) {
-            if (str.length >= len) return str;
-            else return str + ' '.repeat(len - str.length);
+        var rcolor = /\u001b\[\d+m/gm;
+        function viewedLength(str) {
+            return String(str).replace(rcolor, '').length;
         }
 
-        let lines = this.cans(subjects, actions, ressources, contexts);
+        function pad (len, str) {
+            let strlen = viewedLength(str);
+
+            if (strlen >= len) return str;
+            else return str + ' '.repeat(len - strlen);
+        }
+
+        let lines = this.cans(subjects, actions, ressources, contexts, debug);
 
         console.log(
-            pad(lens.subject, 'SUBJECT').bold,
-            '  ',
-            pad(7, 'VERDICT').bold,
-            '  ',
-            pad(lens.action, 'ACTION').bold,
+            pad(lens.subject, 'SUBJECT'.bold),
             ' ',
-            pad(lens.ressource, 'RESSOURCE').bold,
-            '    ',
-            pad(lens.context, 'CONTEXT').bold
+            pad(lens.action, 'ACTION'.bold),
+            ' ',
+            pad(lens.ressource, 'RESSOURCE'.bold),
+            ' ',
+            pad(lens.context, 'CONTEXT'.bold),
+            ' ',
+            pad(7, 'VERDICT'.bold)
         );
 
         for (let i = 0; i < lines.length; i++) {
             console.log(
-                pad(lens.subject,   lines[i].case.subject  .toString()).bold,
-                'is',
-                pad(7,              lines[i].result ? 'allowed' : 'denied')[lines[i].result ? 'green' : 'red'],
-                'to',
-                pad(lens.action,    lines[i].case.action   .toString()).yellow,
+                pad(lens.subject,   lines[i].case.subject  .toString().bold),
                 ' ',
-                pad(lens.ressource, lines[i].case.ressource.toString()).bold,
-                'when',
-                pad(lens.context,   JSON.stringify(lines[i].case.context))
+                pad(lens.action,    lines[i].case.action   .toString().yellow),
+                ' ',
+                pad(lens.ressource, lines[i].case.ressource.toString().bold),
+                ' ',
+                pad(lens.context,   JSON.stringify(lines[i].case.context)),
+                ' ',
+                pad(7,              utils.logVerdict(lines[i].verdict))
             );
         }
     }
